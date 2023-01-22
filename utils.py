@@ -11,8 +11,8 @@ from networks import MLP, ConvNet, LeNet, AlexNet, AlexNetBN, VGG11, VGG11BN, Re
 
 from torchvision.utils import save_image
 
-from covidxdataset import COVIDxDataset
-from cxrdataset import init_CXR
+#from covidxdataset import COVIDxDataset
+#from cxrdataset import init_CXR
 
 def get_dataset(dataset, data_path):
     if dataset == 'MNIST':

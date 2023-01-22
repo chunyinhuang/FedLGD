@@ -9,14 +9,14 @@ import torch
 from torch import nn, optim
 import time
 import copy
-from fedbn_nets.models import DigitModel
+#from fedbn_nets.models import DigitModel
 import argparse
 import numpy as np
 import torchvision
 from torchvision.datasets import ImageFolder
 import torchvision.transforms as transforms
 
-import fedbn_data_utils as data_utils
+#import fedbn_data_utils as data_utils
 from utils import get_loops, get_dataset, get_network, get_eval_pool, evaluate_synset, get_daparam, match_loss, get_time, TensorDataset, epoch, DiffAugment, ParamDiffAug
 from pretraineddataset import PretrainedDataset, GetPretrained
 from condensation import distribution_matching, distribution_matching_bn, gradient_matching, gradient_distribution_matching, get_initial_normal
@@ -195,6 +195,7 @@ def train_vhl(model, optimizer, loss_fun, client_num, device, train_loader, serv
     loss_all = 0
     align_loss_all = 0
     train_iter = iter(train_loader)
+    embed = model.module.embed if torch.cuda.device_count()>1 else model.embed #GPU parallel
     for step in range(len(train_iter)):
         optimizer.zero_grad()
         x, y = next(train_iter)
@@ -208,24 +209,24 @@ def train_vhl(model, optimizer, loss_fun, client_num, device, train_loader, serv
         # similarity model update
         # Constrastive
         if reg_loss == 'contrastive':
-            client_features = model.embed(x)
-            server_features = model.embed(server_images)
+            client_features = embed(x)
+            server_features = embed(server_images)
             align_loss = distance_loss(client_features, server_features, y, server_labels)
         # MMD
         elif reg_loss == 'mmd':
             for c in range(num_classes):
                 client_img_tmp = imgs[c*ipc:(c+1)*ipc]
                 server_img_tmp = server_imgs[c*(ipc):(c+1)*(ipc)]
-                emb_client = model.embed(client_img_tmp)
-                emb_server = model.embed(server_img_tmp)
+                emb_client = embed(client_img_tmp)
+                emb_server = embed(server_img_tmp)
                 align_loss = torch.sum((torch.mean(emb_server, dim=0) - torch.mean(emb_client, dim=0))**2)
         # l2 norm
         elif reg_loss == 'l2norm':
             for c in range(num_classes):
                 client_img_tmp = imgs[c*ipc:(c+1)*ipc]
                 server_img_tmp = server_imgs[c*(ipc):(c+1)*(ipc)]
-                emb_client = model.embed(client_img_tmp)
-                emb_server = model.embed(server_img_tmp)
+                emb_client = embed(client_img_tmp)
+                emb_server = embed(server_img_tmp)
                 align_loss = distance_loss(emb_client, emb_server)
         else:
             raise NotImplementedError
